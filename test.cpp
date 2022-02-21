@@ -1,4 +1,5 @@
 #define PARCER_IMPL  // otherwise non-template implementation won't generate, only import headers
+#define PARCER_T_IMPL
 #include "parcer.h"
 #include <iostream>
 
@@ -27,5 +28,6 @@ int main(){
   test("Hello World!");
 
   test2("[Hello, World  ,   Hello]");
+
   return 0;
 }

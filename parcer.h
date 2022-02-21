@@ -29,11 +29,22 @@ public:
 template <class T> class Parser {
 public:
   Container<ParseUnit<T>> p;
-  Parser(Container<ParseUnit<T>> p) : p(p) {}
-  PResult<T> parse(Input inp, int pos) {
+  Parser(Container<ParseUnit<T>> p)
+#ifdef PARCER_T_IMPL
+      : p(p) {
+  }
+#else
+      ;
+#endif
+  PResult<T> parse(Input inp, int pos)
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     return p->parse(inp, pos);
   }
+#else
+      ;
+#endif
 };
 
 template <class TT, class T> class ParserPipe : public ParseUnit<T> {
@@ -41,7 +52,9 @@ template <class TT, class T> class ParserPipe : public ParseUnit<T> {
   Container<ParseUnit<T>> p2;
 
 public:
-  virtual PResult<T> parse(Input inp, int pos) override {
+  virtual PResult<T> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     auto r1 = p1->parse(inp, pos);
     if (r1.is_none) {
@@ -51,20 +64,36 @@ public:
     }
     return p2->parse(inp, r1.pos);
   }
+#else
+      ;
+#endif
   ParserPipe(Container<ParseUnit<TT>> p1, Container<ParseUnit<T>> p2)
-      : p1(p1), p2(p2) {}
+#ifdef PARCER_T_IMPL
+      : p1(p1), p2(p2) {
+  }
+#else
+      ;
+#endif
 };
 
-template <class TT, class T> Parser<T> operator>>(Parser<TT> p1, Parser<T> p2) {
+template <class TT, class T>
+Parser<T> operator>>(Parser<TT> p1, Parser<T> p2)
+#ifdef PARCER_T_IMPL
+{
   return Container<ParseUnit<T>>(new ParserPipe<TT, T>(p1.p, p2.p));
 }
+#else
+    ;
+#endif
 
 template <class TT, class T> class RevParserPipe : public ParseUnit<TT> {
   Container<ParseUnit<TT>> p1;
   Container<ParseUnit<T>> p2;
 
 public:
-  virtual PResult<TT> parse(Input inp, int pos) override {
+  virtual PResult<TT> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     auto r1 = p1->parse(inp, pos);
     if (r1.is_none) {
@@ -75,34 +104,63 @@ public:
     r1.err = r2.err;
     return r1;
   }
+#else
+      ;
+#endif
   RevParserPipe(Container<ParseUnit<TT>> p1, Container<ParseUnit<T>> p2)
-      : p1(p1), p2(p2) {}
+#ifdef PARCER_T_IMPL
+      : p1(p1), p2(p2) {
+  }
+#else
+      ;
+#endif
 };
 
 template <class TT, class T>
-Parser<TT> operator<<(Parser<TT> p1, Parser<T> p2) {
+Parser<TT> operator<<(Parser<TT> p1, Parser<T> p2)
+#ifdef PARCER_T_IMPL
+{
   return Container<ParseUnit<TT>>(new RevParserPipe<TT, T>(p1.p, p2.p));
 }
+#else
+    ;
+#endif
 
 template <class T> class ParserOr : public ParseUnit<T> {
   Container<ParseUnit<T>> p1;
   Container<ParseUnit<T>> p2;
 
 public:
-  virtual PResult<T> parse(Input inp, int pos) override {
+  virtual PResult<T> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     auto r1 = p1->parse(inp, pos);
     if (r1.is_none)
       return p2->parse(inp, pos);
     return r1;
   }
+#else
+      ;
+#endif
   ParserOr(Container<ParseUnit<T>> p1, Container<ParseUnit<T>> p2)
-      : p1(p1), p2(p2) {}
+#ifdef PARCER_T_IMPL
+      : p1(p1), p2(p2) {
+  }
+#else
+      ;
+#endif
 };
 
-template <class T> Parser<T> operator||(Parser<T> p1, Parser<T> p2) {
+template <class T>
+Parser<T> operator||(Parser<T> p1, Parser<T> p2)
+#ifdef PARCER_T_IMPL
+{
   return Container<ParseUnit<T>>(new ParserOr<T>(p1.p, p2.p));
 };
+#else
+    ;
+#endif
 
 #ifndef NO_KW_PARCERS
 class KWParser : public ParseUnit<std::string> {
@@ -161,8 +219,16 @@ template <class T> class ManyParser : public ParseUnit<List<T>> {
   Container<ParseUnit<T>> baseP;
 
 public:
-  ManyParser(Container<ParseUnit<T>> baseP) : baseP(baseP) {}
-  virtual PResult<List<T>> parse(Input inp, int pos) override {
+  ManyParser(Container<ParseUnit<T>> baseP)
+#ifdef PARCER_T_IMPL
+      : baseP(baseP) {
+  }
+#else
+      ;
+#endif
+  virtual PResult<List<T>> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     List<T> out{};
     int npos = pos;
@@ -174,22 +240,36 @@ public:
     } while (npos > pos);
     return PResult<List<T>>{out, false, npos};
   }
+#else
+      ;
+#endif
 };
 
-template <class T> Parser<List<T>> many(Parser<T> base) {
+template <class T>
+Parser<List<T>> many(Parser<T> base)
+#ifdef PARCER_T_IMPL
+{
   return Container<ParseUnit<List<T>>>(new ManyParser<T>(base.p));
 }
+#else
+    ;
+#endif
 #endif
 
 #ifndef NO_EOF_PACER
 class EOFParser : public ParseUnit<bool> {
 public:
-  virtual PResult<bool> parse(Input inp, int pos) override {
+  virtual PResult<bool> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     if (inp.size() == pos)
       return {true, false, pos, ""};
     return {false, true, pos, "Expected end of file"};
   }
+#else
+      ;
+#endif
 };
 
 Parser<bool> eof() { return Container<ParseUnit<bool>>(new EOFParser()); }
@@ -203,7 +283,9 @@ class InsideParser : public ParseUnit<T> {
   Parser<TTT> pend;
 
 public:
-  virtual PResult<T> parse(Input inp, int pos) override {
+  virtual PResult<T> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     auto b = pbeg.parse(inp, pos);
     if (b.is_none) {
@@ -224,15 +306,28 @@ public:
     out.is_none = e.is_none;
     return out;
   }
+#else
+      ;
+#endif
 
   InsideParser(Parser<TT> beg, Parser<T> main, Parser<TTT> end)
-      : pbeg(beg), pmain(main), pend(end) {}
+#ifdef PARCER_T_IMPL
+      : pbeg(beg), pmain(main), pend(end) {
+  }
+#else
+      ;
+#endif
 };
 
 template <class T, class TT, class TTT>
-Parser<T> inside(Parser<TT> beg, Parser<T> main, Parser<TTT> end) {
+Parser<T> inside(Parser<TT> beg, Parser<T> main, Parser<TTT> end)
+#ifdef PARCER_T_IMPL
+{
   return Container<ParseUnit<T>>(new InsideParser<T, TT, TTT>(beg, main, end));
 }
+#else
+    ;
+#endif
 #endif
 
 #ifndef NO_SEPERATED
@@ -241,8 +336,16 @@ template <class T, class TT> class SeperatedParser : public ParseUnit<List<T>> {
   Container<ParseUnit<TT>> sep;
 
 public:
-  SeperatedParser(Parser<T> main, Parser<TT> sep) : main(main.p), sep(sep.p) {}
-  virtual PResult<List<T>> parse(Input inp, int pos) override {
+  SeperatedParser(Parser<T> main, Parser<TT> sep)
+#ifdef PARCER_T_IMPL
+      : main(main.p), sep(sep.p) {
+  }
+#else
+      ;
+#endif
+  virtual PResult<List<T>> parse(Input inp, int pos) override
+#ifdef PARCER_T_IMPL
+  {
     PREPARCE_CALLBACK
     List<T> out{};
     int npos = pos;
@@ -260,11 +363,19 @@ public:
     } while (npos > pos);
     return PResult<List<T>>{out, false, npos};
   }
+#else
+      ;
+#endif
 };
 
 template <class T, class TT>
-Parser<List<T>> seperated(Parser<T> main, Parser<TT> sep) {
+Parser<List<T>> seperated(Parser<T> main, Parser<TT> sep)
+#ifdef PARCER_T_IMPL
+{
   return Container<ParseUnit<List<T>>>(new SeperatedParser<T, TT>(main, sep));
 }
+#else
+    ;
+#endif
 #endif
 }; // namespace parcer
