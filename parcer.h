@@ -272,7 +272,14 @@ public:
 #endif
 };
 
-Parser<bool> eof() { return Container<ParseUnit<bool>>(new EOFParser()); }
+Parser<bool> eof()
+#ifdef PARCER_IMPL
+{
+  return Container<ParseUnit<bool>>(new EOFParser());
+}
+#else
+    ;
+#endif
 #endif
 
 #ifndef NO_INSIDE
