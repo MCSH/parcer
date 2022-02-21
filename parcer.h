@@ -3,6 +3,10 @@
 #include <string>
 #include <vector>
 
+#ifndef PREPARCE_CALLBACK
+#define PREPARCE_CALLBACK
+#endif
+
 namespace parcer {
 using ERROR = std::string;
 using Input = std::string &;
@@ -26,7 +30,10 @@ template <class T> class Parser {
 public:
   Container<ParseUnit<T>> p;
   Parser(Container<ParseUnit<T>> p) : p(p) {}
-  PResult<T> parse(Input inp, int pos) { return p->parse(inp, pos); }
+  PResult<T> parse(Input inp, int pos) {
+    PREPARCE_CALLBACK
+    return p->parse(inp, pos);
+  }
 };
 
 template <class TT, class T> class ParserPipe : public ParseUnit<T> {
@@ -35,6 +42,7 @@ template <class TT, class T> class ParserPipe : public ParseUnit<T> {
 
 public:
   virtual PResult<T> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     auto r1 = p1->parse(inp, pos);
     if (r1.is_none) {
       PResult<T> out;
@@ -57,6 +65,7 @@ template <class TT, class T> class RevParserPipe : public ParseUnit<TT> {
 
 public:
   virtual PResult<TT> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     auto r1 = p1->parse(inp, pos);
     if (r1.is_none) {
       return r1;
@@ -81,6 +90,7 @@ template <class T> class ParserOr : public ParseUnit<T> {
 
 public:
   virtual PResult<T> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     auto r1 = p1->parse(inp, pos);
     if (r1.is_none)
       return p2->parse(inp, pos);
@@ -109,6 +119,7 @@ public:
 KWParser::KWParser(std::string kw) : kw(kw) { len = kw.size(); }
 
 PResult<std::string> KWParser::parse(Input inp, int pos) {
+  PREPARCE_CALLBACK
   if (inp.substr(pos, len) == kw)
     return PResult<std::string>{kw, false, pos + len, ""};
   else
@@ -136,6 +147,7 @@ Parser<char> CharParser::mk(char c) {
 }
 
 PResult<char> CharParser::parse(Input inp, int pos) {
+  PREPARCE_CALLBACK
   if (inp[pos] == c) {
     return PResult<char>{c, false, pos + 1, ""};
   }
@@ -151,6 +163,7 @@ template <class T> class ManyParser : public ParseUnit<List<T>> {
 public:
   ManyParser(Container<ParseUnit<T>> baseP) : baseP(baseP) {}
   virtual PResult<List<T>> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     List<T> out{};
     int npos = pos;
     do {
@@ -172,6 +185,7 @@ template <class T> Parser<List<T>> many(Parser<T> base) {
 class EOFParser : public ParseUnit<bool> {
 public:
   virtual PResult<bool> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     if (inp.size() == pos)
       return {true, false, pos, ""};
     return {false, true, pos, "Expected end of file"};
@@ -190,6 +204,7 @@ class InsideParser : public ParseUnit<T> {
 
 public:
   virtual PResult<T> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     auto b = pbeg.parse(inp, pos);
     if (b.is_none) {
       PResult<T> out;
@@ -216,7 +231,7 @@ public:
 
 template <class T, class TT, class TTT>
 Parser<T> inside(Parser<TT> beg, Parser<T> main, Parser<TTT> end) {
-  return Container<ParseUnit<T>>(new InsideParser(beg, main, end));
+  return Container<ParseUnit<T>>(new InsideParser<T, TT, TTT>(beg, main, end));
 }
 #endif
 
@@ -228,6 +243,7 @@ template <class T, class TT> class SeperatedParser : public ParseUnit<List<T>> {
 public:
   SeperatedParser(Parser<T> main, Parser<TT> sep) : main(main.p), sep(sep.p) {}
   virtual PResult<List<T>> parse(Input inp, int pos) override {
+    PREPARCE_CALLBACK
     List<T> out{};
     int npos = pos;
     do {
